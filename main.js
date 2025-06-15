@@ -51,21 +51,8 @@ var biomasMG = L.tileLayer.wms(geoserverUrl, {
   version: "1.1.0",
 });
 
-// 4. Controle de camadas
-var baseMaps = {
-  OpenStreetMap: osm,
-};
-
-var overlayMaps = {
-  "UC Estaduais": ucEstaduais,
-  "UC Municipais": ucMunicipais,
-  "UC Federais": ucFederais,
-  "Limite de MG": limiteMG,
-  "Área de Criação de UC": areaCriacaoUC,
-  "Biomas de MG": biomasMG,
-};
-
-L.control.layers(baseMaps, overlayMaps).addTo(map);
+// 4. Configuração das camadas
+// (O controle de camadas padrão foi removido em favor da sidebar personalizada)
 
 // ---------------- Sidebar ----------------
 var layerListEl = document.getElementById("layerList");
@@ -95,11 +82,20 @@ layerData.forEach(function (item) {
   // Adiciona o checkbox
   var checkbox = document.createElement("input");
   checkbox.type = "checkbox";
+  checkbox.checked = false; // Começa com a camada desativada
   checkbox.addEventListener("change", function () {
     if (this.checked) {
       item.layer.addTo(map);
+      // Se o controle de opacidade existe, ativa ele
+      if (opacityControl) {
+        opacityControl.querySelector('.opacity-slider').disabled = false;
+      }
     } else {
       map.removeLayer(item.layer);
+      // Se o controle de opacidade existe, desativa ele
+      if (opacityControl) {
+        opacityControl.querySelector('.opacity-slider').disabled = true;
+      }
     }
   });
 
@@ -107,6 +103,11 @@ layerData.forEach(function (item) {
   li.appendChild(dragHandle);
   li.appendChild(label);
   li.appendChild(checkbox);
+  
+  // Adiciona a camada ao mapa se estiver marcada
+  if (checkbox.checked) {
+    item.layer.addTo(map);
+  }
   
   layerListEl.appendChild(li);
 });
