@@ -69,33 +69,64 @@ layerData.forEach(function (item) {
   li.className = "layer-item";
   li.setAttribute("data-name", item.name);
 
+  // Adiciona o handle de arrasto
   var dragHandle = document.createElement("div");
   dragHandle.className = "drag-handle";
   
+  // Adiciona o nome da camada
   var label = document.createElement("span");
   label.textContent = item.name;
   
+  // Adiciona o checkbox
   var checkbox = document.createElement("input");
   checkbox.type = "checkbox";
-  checkbox.checked = false; 
+  checkbox.checked = false;
+
+  // Controle de opacidade
+  var opacityControl = document.createElement("div");
+  opacityControl.className = "opacity-control";
+
+  var slider = document.createElement("input");
+  slider.type = "range";
+  slider.className = "opacity-slider";
+  slider.min = "0";
+  slider.max = "1";
+  slider.step = "0.05";
+  slider.value = "1";
+  slider.disabled = true; // Começa desabilitado
+
+  var opacityValue = document.createElement("span");
+  opacityValue.className = "opacity-value";
+  opacityValue.textContent = "100%";
+  
+  slider.addEventListener("input", function() {
+    item.layer.setOpacity(this.value);
+    opacityValue.textContent = Math.round(this.value * 100) + "%";
+  });
+  
   checkbox.addEventListener("change", function () {
     if (this.checked) {
       item.layer.addTo(map);
+      slider.disabled = false;
     } else {
       map.removeLayer(item.layer);
+      slider.disabled = true;
     }
   });
-
+  
+  // Adiciona os elementos na lista
   li.appendChild(dragHandle);
   li.appendChild(label);
   li.appendChild(checkbox);
   
-  if (checkbox.checked) {
-    item.layer.addTo(map);
-  }
+  opacityControl.appendChild(slider);
+  opacityControl.appendChild(opacityValue);
+  
+  li.appendChild(opacityControl);
   
   layerListEl.appendChild(li);
 });
+
 
 // 5. Funcionalidade de ordenação das camadas na sidebar
 if (typeof Sortable !== "undefined") {
@@ -129,13 +160,11 @@ function updateLayerOrder() {
 
 // 6. Funcionalidade de GetFeatureInfo ao clicar no mapa
 map.on('click', function(e) {
-  // Cria e abre um popup no local do clique com uma mensagem de "carregando"
   var popup = L.popup()
     .setLatLng(e.latlng)
     .setContent('<div class="loading">Buscando informações...</div>')
     .openOn(map);
 
-  // Identifica as camadas WMS que estão ativas no mapa
   var activeLayers = layerData.filter(function(item) {
     return map.hasLayer(item.layer);
   });
@@ -145,12 +174,10 @@ map.on('click', function(e) {
     return;
   }
   
-  // Extrai os nomes das camadas ativas para a requisição
   var layerNames = activeLayers.map(function(item) {
     return item.layer.wmsParams.layers;
   });
 
-  // Parâmetros para a requisição GetFeatureInfo
   var params = {
     service: 'WMS',
     version: '1.1.0',
@@ -158,7 +185,7 @@ map.on('click', function(e) {
     layers: layerNames.join(','),
     query_layers: layerNames.join(','),
     info_format: 'application/json',
-    feature_count: 10, // Limite de feições retornadas
+    feature_count: 10,
     srs: 'EPSG:4326',
     bbox: map.getBounds().toBBoxString(),
     height: map.getSize().y,
@@ -167,20 +194,16 @@ map.on('click', function(e) {
     y: Math.round(e.containerPoint.y)
   };
 
-  // Constrói a URL final da requisição
   var url = geoserverUrl + L.Util.getParamString(params, geoserverUrl);
 
-  // Faz a requisição usando a API Fetch
   fetch(url)
     .then(response => response.json())
     .then(data => {
-      // Se não encontrou feições, exibe uma mensagem
       if (!data.features || data.features.length === 0) {
         popup.setContent('Nenhuma feição encontrada neste local.');
         return;
       }
       
-      // Formata o conteúdo do popup com os dados retornados
       var content = formatPopupContent(data.features);
       popup.setContent(content);
     })
@@ -190,22 +213,15 @@ map.on('click', function(e) {
     });
 });
 
-/**
- * Formata os dados das feições em HTML para exibição no popup.
- * @param {Array} features - Um array de feições GeoJSON.
- * @returns {string} - O conteúdo HTML para o popup.
- */
 function formatPopupContent(features) {
   var html = '<div class="popup-content">';
   
   features.forEach(function(feature, index) {
-    // Adiciona o nome da camada como um título
     var layerName = feature.id.split('.')[0];
     html += '<h4>' + layerName + '</h4>';
     html += '<div class="feature-info">';
     html += '<table class="feature-table">';
     
-    // Itera sobre as propriedades da feição e as adiciona na tabela
     for (var key in feature.properties) {
       if (feature.properties.hasOwnProperty(key)) {
         html += '<tr>';
