@@ -40,12 +40,67 @@ body {
   flex-shrink: 0;
 }
 
+/* Estilos para o popup de informações */
+.popup-content {
+  max-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 0.9em;
+}
+
+.popup-content h4 {
+  margin: 10px 0 5px 0;
+  color: #1e40af;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 3px;
+}
+
+.feature-info {
+  margin-bottom: 15px;
+}
+
+.feature-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.feature-table tr:not(:last-child) {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.property-name {
+  font-weight: 500;
+  color: #4b5563;
+  padding: 4px 8px 4px 0;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.property-value {
+  color: #1f2937;
+  padding: 4px 0;
+  word-break: break-word;
+}
+
+.loading {
+  padding: 10px;
+  color: #4b5563;
+  font-style: italic;
+}
+
+.error {
+  color: #dc2626;
+  padding: 5px 0;
+}
+
 /* Mapa */
 #map {
   flex: 1;
   height: 100vh;
   width: calc(100vw - 250px);
   position: relative;
+  z-index: 1; /* Garante que o mapa não sobreponha a sidebar */
 }
 
 /* Lista de camadas */
