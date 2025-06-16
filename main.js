@@ -51,7 +51,6 @@ var biomasMG = L.tileLayer.wms(geoserverUrl, {
   version: "1.1.0",
 });
 
-
 // 4. Configuração das camadas
 var layerListEl = document.getElementById("layerList");
 
@@ -69,20 +68,16 @@ layerData.forEach(function (item) {
   li.className = "layer-item";
   li.setAttribute("data-name", item.name);
 
-  // Adiciona o handle de arrasto
   var dragHandle = document.createElement("div");
   dragHandle.className = "drag-handle";
-  
-  // Adiciona o nome da camada
+
   var label = document.createElement("span");
   label.textContent = item.name;
-  
-  // Adiciona o checkbox
+
   var checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.checked = false;
 
-  // Controle de opacidade
   var opacityControl = document.createElement("div");
   opacityControl.className = "opacity-control";
 
@@ -93,17 +88,17 @@ layerData.forEach(function (item) {
   slider.max = "1";
   slider.step = "0.05";
   slider.value = "1";
-  slider.disabled = true; // Começa desabilitado
+  slider.disabled = true;
 
   var opacityValue = document.createElement("span");
   opacityValue.className = "opacity-value";
   opacityValue.textContent = "100%";
-  
-  slider.addEventListener("input", function() {
+
+  slider.addEventListener("input", function () {
     item.layer.setOpacity(this.value);
     opacityValue.textContent = Math.round(this.value * 100) + "%";
   });
-  
+
   checkbox.addEventListener("change", function () {
     if (this.checked) {
       item.layer.addTo(map);
@@ -112,35 +107,30 @@ layerData.forEach(function (item) {
       map.removeLayer(item.layer);
       slider.disabled = true;
     }
+    legend.update(); // Atualiza a legenda
   });
-  
-  // Adiciona os elementos na lista
+
   li.appendChild(dragHandle);
   li.appendChild(label);
   li.appendChild(checkbox);
-  
+
   opacityControl.appendChild(slider);
   opacityControl.appendChild(opacityValue);
-  
+
   li.appendChild(opacityControl);
-  
+
   layerListEl.appendChild(li);
 });
-
 
 // 5. Funcionalidade de ordenação das camadas na sidebar
 if (typeof Sortable !== "undefined") {
   new Sortable(layerListEl, {
     animation: 150,
-    handle: '.drag-handle',
-    ghostClass: 'dragging',
-    onStart: function(evt) {
-      evt.item.classList.add('dragging');
-    },
-    onEnd: function(evt) {
-      evt.item.classList.remove('dragging');
+    handle: ".drag-handle",
+    ghostClass: "dragging",
+    onEnd: function (evt) {
       updateLayerOrder();
-    }
+    },
   });
 }
 
@@ -155,85 +145,127 @@ function updateLayerOrder() {
       obj.layer.bringToFront();
     }
   });
+  legend.update(); // Atualiza a legenda após reordenar
 }
 
+// 6. Legenda do Mapa
+var legend = L.control({ position: "bottomright" });
 
-// 6. Funcionalidade de GetFeatureInfo ao clicar no mapa
-map.on('click', function(e) {
+legend.onAdd = function (map) {
+  this._div = L.DomUtil.create("div", "info legend");
+  this.update();
+  return this._div;
+};
+
+legend.update = function () {
+  var activeLayers = layerData.filter((item) => map.hasLayer(item.layer));
+  var content = "<h4>Legenda</h4>";
+
+  // Pega a ordem da lista de camadas na tela
+  var visibleLayerNames = Array.from(layerListEl.querySelectorAll("li")).map(
+    (li) => li.getAttribute("data-name")
+  );
+
+  // Filtra e reordena as camadas ativas de acordo com a sidebar
+  var sortedActiveLayers = activeLayers.sort((a, b) => {
+    return (
+      visibleLayerNames.indexOf(a.name) - visibleLayerNames.indexOf(b.name)
+    );
+  });
+
+  sortedActiveLayers.forEach(function (item) {
+    var layerName = item.layer.wmsParams.layers;
+    var legendUrl = `${geoserverUrl}?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=${layerName}`;
+    content += `<div class="legend-item"><img src="${legendUrl}" alt="Legenda para ${item.name}"> ${item.name}</div>`;
+  });
+
+  this._div.innerHTML = content;
+  this._div.style.display = activeLayers.length > 0 ? "block" : "none";
+};
+
+legend.addTo(map);
+
+// 7. Funcionalidade de GetFeatureInfo ao clicar no mapa
+map.on("click", function (e) {
   var popup = L.popup()
     .setLatLng(e.latlng)
     .setContent('<div class="loading">Buscando informações...</div>')
     .openOn(map);
 
-  var activeLayers = layerData.filter(function(item) {
+  var activeLayers = layerData.filter(function (item) {
     return map.hasLayer(item.layer);
   });
 
   if (activeLayers.length === 0) {
-    popup.setContent('<div class="error">Nenhuma camada selecionada para consulta.</div>');
+    popup.setContent(
+      '<div class="error">Nenhuma camada selecionada para consulta.</div>'
+    );
     return;
   }
-  
-  var layerNames = activeLayers.map(function(item) {
+
+  var layerNames = activeLayers.map(function (item) {
     return item.layer.wmsParams.layers;
   });
 
   var params = {
-    service: 'WMS',
-    version: '1.1.0',
-    request: 'GetFeatureInfo',
-    layers: layerNames.join(','),
-    query_layers: layerNames.join(','),
-    info_format: 'application/json',
+    service: "WMS",
+    version: "1.1.0",
+    request: "GetFeatureInfo",
+    layers: layerNames.join(","),
+    query_layers: layerNames.join(","),
+    info_format: "application/json",
     feature_count: 10,
-    srs: 'EPSG:4326',
+    srs: "EPSG:4326",
     bbox: map.getBounds().toBBoxString(),
     height: map.getSize().y,
     width: map.getSize().x,
     x: Math.round(e.containerPoint.x),
-    y: Math.round(e.containerPoint.y)
+    y: Math.round(e.containerPoint.y),
   };
 
   var url = geoserverUrl + L.Util.getParamString(params, geoserverUrl);
 
   fetch(url)
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       if (!data.features || data.features.length === 0) {
-        popup.setContent('Nenhuma feição encontrada neste local.');
+        popup.setContent("Nenhuma feição encontrada neste local.");
         return;
       }
-      
+
       var content = formatPopupContent(data.features);
       popup.setContent(content);
     })
-    .catch(error => {
-      console.error('Erro na requisição GetFeatureInfo:', error);
-      popup.setContent('<div class="error">Ocorreu um erro ao buscar as informações.</div>');
+    .catch((error) => {
+      console.error("Erro na requisição GetFeatureInfo:", error);
+      popup.setContent(
+        '<div class="error">Ocorreu um erro ao buscar as informações.</div>'
+      );
     });
 });
 
 function formatPopupContent(features) {
   var html = '<div class="popup-content">';
-  
-  features.forEach(function(feature, index) {
-    var layerName = feature.id.split('.')[0];
-    html += '<h4>' + layerName + '</h4>';
+
+  features.forEach(function (feature, index) {
+    var layerName = feature.id.split(".")[0];
+    html += "<h4>" + layerName + "</h4>";
     html += '<div class="feature-info">';
     html += '<table class="feature-table">';
-    
+
     for (var key in feature.properties) {
       if (feature.properties.hasOwnProperty(key)) {
-        html += '<tr>';
-        html += '<td class="property-name">' + key.toUpperCase() + '</td>';
-        html += '<td class="property-value">' + feature.properties[key] + '</td>';
-        html += '</tr>';
+        html += "<tr>";
+        html += '<td class="property-name">' + key.toUpperCase() + "</td>";
+        html +=
+          '<td class="property-value">' + feature.properties[key] + "</td>";
+        html += "</tr>";
       }
     }
-    html += '</table>';
-    html += '</div>';
+    html += "</table>";
+    html += "</div>";
   });
-  
-  html += '</div>';
+
+  html += "</div>";
   return html;
 }
