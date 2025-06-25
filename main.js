@@ -4,9 +4,6 @@ const INITIAL_ZOOM = 5;
 const GEOSERVER_URL = "http://localhost:8080/geoserver/wms";
 const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-const ESRI_ATTRIBUTION =
-  '&copy; <a href="https://www.esri.com/en-us/home">Esri</a>, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
-
 
 // Configurações padrão para camadas WMS
 const WMS_DEFAULT_PARAMS = {
@@ -33,23 +30,11 @@ function initializeMap() {
   return L.map("map").setView(INITIAL_VIEW, INITIAL_ZOOM);
 }
 
-// 2. Adiciona o seletor de mapas base
-function setupBaseLayers(map) {
-  const baseLayers = {
-    "Padrão": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: OSM_ATTRIBUTION,
-    }),
-    "Satélite": L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-      attribution: ESRI_ATTRIBUTION,
-    }),
-
-  };
-
-  // Adiciona a camada padrão ao mapa
-  baseLayers["Padrão"].addTo(map);
-
-  // Adiciona o controle de camadas
-  L.control.layers(baseLayers).addTo(map);
+// 2. Adiciona a camada base OpenStreetMap
+function addBaseLayer(map) {
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: OSM_ATTRIBUTION,
+  }).addTo(map);
 }
 
 // 3. Cria as camadas WMS
@@ -181,20 +166,22 @@ function setupLegend(map, layerData) {
   return legend;
 }
 
-// 6. Funcionalidade GetFeatureInfo (Popup)
+// 6. Funcionalidade GetFeatureInfo
 function setupGetFeatureInfo(map, layerData) {
   map.on("click", async (e) => {
-    const activeLayers = layerData.filter((item) => map.hasLayer(item.layer));
-
-    if (activeLayers.length === 0) {
-      return; // Nenhuma camada ativa, não faz nada
-    }
-
-    // Mostra um popup de carregamento
     const popup = L.popup()
       .setLatLng(e.latlng)
       .setContent('<div class="loading">Buscando informações...</div>')
       .openOn(map);
+
+    const activeLayers = layerData.filter((item) => map.hasLayer(item.layer));
+
+    if (activeLayers.length === 0) {
+      popup.setContent(
+        '<div class="error">Nenhuma camada selecionada para consulta.</div>'
+      );
+      return;
+    }
 
     const layerNames = activeLayers.map((item) => item.layer.wmsParams.layers);
 
@@ -221,7 +208,7 @@ function setupGetFeatureInfo(map, layerData) {
       const data = await response.json();
 
       if (!data.features || data.features.length === 0) {
-        popup.setContent('<p>Nenhuma feição encontrada neste local.</p>');
+        popup.setContent("Nenhuma feição encontrada neste local.");
         return;
       }
 
@@ -229,7 +216,9 @@ function setupGetFeatureInfo(map, layerData) {
       popup.setContent(content);
     } catch (error) {
       console.error("Erro na requisição GetFeatureInfo:", error);
-      popup.setContent('<div class="error">Ocorreu um erro ao buscar as informações.</div>');
+      popup.setContent(
+        '<div class="error">Ocorreu um erro ao buscar as informações.</div>'
+      );
     }
   });
 }
@@ -238,9 +227,9 @@ function formatPopupContent(features) {
   let html = '<div class="popup-content">';
 
   features.forEach((feature) => {
-    const layerName = feature.id.split(".")[0].replace(/_/g, ' ');
-    html += `<div class="feature-info">`;
+    const layerName = feature.id.split(".")[0];
     html += `<h4>${layerName}</h4>`;
+    html += '<div class="feature-info">';
     html += '<table class="feature-table">';
 
     for (const key in feature.properties) {
@@ -261,18 +250,8 @@ function formatPopupContent(features) {
 
 // Inicializa a aplicação
 document.addEventListener("DOMContentLoaded", () => {
-  // Controle da Splash Screen
-  const splashScreen = document.getElementById("splash-screen");
-  const closeSplashButton = document.getElementById("close-splash");
-
-  if (splashScreen && closeSplashButton) {
-    closeSplashButton.addEventListener("click", () => {
-      splashScreen.style.display = "none";
-    });
-  }
-
   const map = initializeMap();
-  setupBaseLayers(map);
+  addBaseLayer(map);
   const layerData = createWMSLayers();
   const legend = setupLegend(map, layerData);
   setupLayerList(map, layerData, legend);
