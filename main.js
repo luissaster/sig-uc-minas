@@ -25,16 +25,29 @@ const WMS_LAYERS = [
   { name: "Biomas de MG", layerName: "projeto_sin420:biomas_mg" },
 ];
 
+// Camadas base
+const baseLayers = {
+  "OpenStreetMap": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: OSM_ATTRIBUTION,
+  }),
+  "Satélite": L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    {
+      attribution:
+        'Tiles © <a href="https://www.esri.com/">Esri</a> &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+    }
+  ),
+};
+
 // 1. Inicializa o Mapa
 function initializeMap() {
   return L.map("map").setView(INITIAL_VIEW, INITIAL_ZOOM);
 }
 
-// 2. Adiciona a camada base OpenStreetMap
+// 2. Adiciona a camada base OpenStreetMap (agora usando baseLayers)
 function addBaseLayer(map) {
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: OSM_ATTRIBUTION,
-  }).addTo(map);
+  baseLayers["OpenStreetMap"].addTo(map);
+  L.control.layers(baseLayers, null, { position: "topright", collapsed: true }).addTo(map);
 }
 
 // 3. Cria as camadas WMS
@@ -92,6 +105,7 @@ function setupLayerList(map, layerData, legend) {
       if (this.checked) {
         item.layer.addTo(map);
         slider.disabled = false;
+        item.layer.bringToFront();
       } else {
         map.removeLayer(item.layer);
         slider.disabled = true;
