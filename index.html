@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>SIG Web</title>
+    <title>SIG UC Minas</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -25,9 +25,92 @@
     <!-- Overlay para fechar o menu -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     
+    <!-- Barra de ferramentas superior -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button class="toolbar-btn" id="zoomToExtent" title="Zoom para Minas Gerais">
+          <span class="toolbar-icon">🗺️</span>
+          <span class="toolbar-text">MG</span>
+        </button>
+        <button class="toolbar-btn" id="fullscreenBtn" title="Tela cheia">
+          <span class="toolbar-icon">⛶</span>
+          <span class="toolbar-text">Tela Cheia</span>
+        </button>
+      </div>
+      
+      <div class="toolbar-center">
+        <div class="search-container">
+          <input type="text" id="layerSearch" placeholder="Pesquisar cidade, local ou coordenadas..." class="search-input">
+          <button class="search-btn" id="searchBtn" title="Buscar no mapa">
+            <span class="search-icon">🔍</span>
+          </button>
+          <div class="search-suggestions" id="searchSuggestions"></div>
+        </div>
+      </div>
+      
+      <div class="toolbar-right">
+        <button class="toolbar-btn" id="infoBtn" title="Informações">
+          <span class="toolbar-icon">ℹ️</span>
+          <span class="toolbar-text">Info</span>
+        </button>
+        <button class="toolbar-btn" id="helpBtn" title="Ajuda">
+          <span class="toolbar-icon">❓</span>
+          <span class="toolbar-text">Ajuda</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Painel de informações -->
+    <div class="info-panel" id="infoPanel">
+      <div class="info-header">
+        <h3>Informações do Mapa</h3>
+        <button class="close-btn" id="closeInfoPanel">×</button>
+      </div>
+      <div class="info-content">
+        <div class="info-item">
+          <strong>Coordenadas:</strong>
+          <span id="coordinates">Clique no mapa</span>
+        </div>
+        <div class="info-item">
+          <strong>Zoom:</strong>
+          <span id="zoomLevel">5</span>
+        </div>
+        <div class="info-item">
+          <strong>Escala:</strong>
+          <span id="mapScale">1:10,000,000</span>
+        </div>
+        <div class="info-item">
+          <strong>Projeção:</strong>
+          <span>WGS84 (EPSG:4326)</span>
+        </div>
+        <div class="info-item">
+          <strong>Camadas ativas:</strong>
+          <span id="activeLayers">0</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Loading spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+      <div class="spinner"></div>
+      <p>Carregando...</p>
+    </div>
+    
+    <!-- Notificações -->
+    <div class="notifications" id="notifications"></div>
+    
     <div id="sidebar">
       <h2>SIG UC Minas</h2>
       <div class="sidebar-subtitle">Sistema de Informações Geográficas</div>
+      
+      <!-- Filtros rápidos -->
+      <div class="quick-filters">
+        <button class="filter-btn active" data-filter="all">Todas</button>
+        <button class="filter-btn" data-filter="uc">UCs</button>
+        <button class="filter-btn" data-filter="limite">Limites</button>
+        <button class="filter-btn" data-filter="outros">Outros</button>
+      </div>
+      
       <ul id="layerList"></ul>
     </div>
     <div id="map"></div>
