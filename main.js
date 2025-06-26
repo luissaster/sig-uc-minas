@@ -23,6 +23,7 @@ const WMS_LAYERS = [
     layerName: "projeto_sin420:area_criacao_uc",
   },
   { name: "Biomas de MG", layerName: "projeto_sin420:biomas_mg" },
+  { name: "Barragens", layerName: "projeto_sin420:barragens" },
 ];
 
 // Camadas base
@@ -38,6 +39,33 @@ const baseLayers = {
     }
   ),
 };
+
+// Função para gerenciar o menu móvel
+function setupMobileMenu() {
+  const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+  const sidebar = document.getElementById('sidebar');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+  if (mobileMenuToggle && sidebar && sidebarOverlay) {
+    mobileMenuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('active');
+    });
+
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+    });
+
+    // Fechar menu ao redimensionar para desktop
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 768) {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('active');
+      }
+    });
+  }
+}
 
 // 1. Inicializa o Mapa
 function initializeMap() {
@@ -270,4 +298,5 @@ document.addEventListener("DOMContentLoaded", () => {
   const legend = setupLegend(map, layerData);
   setupLayerList(map, layerData, legend);
   setupGetFeatureInfo(map, layerData);
+  setupMobileMenu();
 });
