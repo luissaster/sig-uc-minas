@@ -1,9 +1,14 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>SIG Web</title>
+    <title>SIG UC Minas</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <link
       rel="stylesheet"
@@ -11,45 +16,119 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Botão de menu móvel -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Abrir menu"></button>
+    
+    <!-- Overlay para fechar o menu -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- Barra de ferramentas superior -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button class="toolbar-btn" id="zoomToExtent" title="Zoom para Minas Gerais">
+          <span class="toolbar-icon">🗺️</span>
+          <span class="toolbar-text">MG</span>
+        </button>
+        <button class="toolbar-btn" id="fullscreenBtn" title="Tela cheia">
+          <span class="toolbar-icon">⛶</span>
+          <span class="toolbar-text">Tela Cheia</span>
+        </button>
+        <button class="toolbar-btn" id="measureBtn" title="Medir distância">
+          <span class="toolbar-icon">📏</span>
+          <span class="toolbar-text">Medir</span>
+        </button>
+      </div>
+      
+      <div class="toolbar-center">
+        <div class="search-container">
+          <input type="text" id="layerSearch" placeholder="Pesquisar cidade, local ou coordenadas..." class="search-input">
+          <button class="search-btn" id="searchBtn" title="Buscar no mapa">
+            <span class="search-icon">🔍</span>
+          </button>
+          <div class="search-suggestions" id="searchSuggestions"></div>
+        </div>
+      </div>
+      
+      <div class="toolbar-right">
+        <button class="toolbar-btn" id="infoBtn" title="Informações">
+          <span class="toolbar-icon">ℹ️</span>
+          <span class="toolbar-text">Info</span>
+        </button>
+        <button class="toolbar-btn" id="githubBtn" title="Repositório GitHub" onclick="window.open('https://github.com/luissaster/uc-mg-web-sig', '_blank')">
+          <span class="toolbar-icon">🐙</span>
+          <span class="toolbar-text">GitHub</span>
+        </button>
+        <button class="toolbar-btn" id="helpBtn" title="Ajuda">
+          <span class="toolbar-icon">❓</span>
+          <span class="toolbar-text">Ajuda</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Painel de informações -->
+    <div class="info-panel" id="infoPanel">
+      <div class="info-header">
+        <h3>Informações do Mapa</h3>
+        <button class="close-btn" id="closeInfoPanel">×</button>
+      </div>
+      <div class="info-content">
+        <div class="info-item">
+          <strong>Coordenadas:</strong>
+          <span id="coordinates">Clique no mapa</span>
+        </div>
+        <div class="info-item">
+          <strong>Zoom:</strong>
+          <span id="zoomLevel">5</span>
+        </div>
+        <div class="info-item">
+          <strong>Escala:</strong>
+          <span id="mapScale">1:10,000,000</span>
+        </div>
+        <div class="info-item">
+          <strong>Projeção:</strong>
+          <span>WGS84 (EPSG:4326)</span>
+        </div>
+        <div class="info-item">
+          <strong>Camadas ativas:</strong>
+          <span id="activeLayers">0</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Loading spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+      <div class="spinner"></div>
+      <p>Carregando...</p>
+    </div>
+    
+    <!-- Notificações -->
+    <div class="notifications" id="notifications"></div>
+    
+    <div id="sidebar">
+      <h2>SIG UC Minas</h2>
+      <div class="sidebar-subtitle">Sistema de Informações Geográficas</div>
+      
+      <!-- Filtros rápidos -->
+      <div class="quick-filters">
+        <button class="filter-btn active" data-filter="all">Todas</button>
+        <button class="filter-btn" data-filter="uc">UCs</button>
+        <button class="filter-btn" data-filter="limite">Limites</button>
+        <button class="filter-btn" data-filter="outros">Outros</button>
+      </div>
+      
+      <ul id="layerList"></ul>
+    </div>
+    <div id="map"></div>
 
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
-
-    <style>
-      /* Define a altura do container do mapa */
-      #map {
-        height: 600px;
-        width: 100%;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
-
-    <script>
-      // 1. Inicializa o mapa e define a visão inicial (latitude, longitude, zoom)
-      var map = L.map("map").setView([-14.235, -51.925], 5); // Centro do Brasil
-
-      // 2. Adiciona um mapa base (Tile Layer) do OpenStreetMap
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(map);
-
-      // 3. Adiciona a camada WMS do GeoServer
-      var geoserverUrl = "http://localhost:8080/geoserver/wms";
-      var minhaCamada = L.tileLayer
-        .wms(geoserverUrl, {
-          layers: "projeto_sin420:uc_estaduais", // NOME_DO_WORKSPACE:NOME_DA_CAMADA
-          format: "image/png",
-          transparent: true,
-          version: "1.1.0",
-          attribution: "Meus Dados",
-        })
-        .addTo(map);
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="main.js"></script>
   </body>
 </html>
