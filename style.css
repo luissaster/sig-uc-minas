@@ -1293,3 +1293,79 @@ body {
 .leaflet-right {
   z-index: 1000;
 }
+
+/* Estilos para a ferramenta de medição */
+.toolbar-btn.active {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+.toolbar-btn.active:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+}
+
+/* Marcadores de medição */
+.measure-marker {
+  background: #ef4444;
+  color: white;
+  border: 2px solid white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: measureBounce 0.6s ease-out;
+}
+
+@keyframes measureBounce {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Tooltip de medição */
+.measure-tooltip {
+  background: rgba(239, 68, 68, 0.95);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.measure-tooltip::before {
+  border-top-color: rgba(239, 68, 68, 0.95);
+}
+
+/* Cursor de medição */
+#map.measuring {
+  cursor: crosshair !important;
+}
+
+/* Responsividade para medição */
+@media (max-width: 768px) {
+  .toolbar-btn.active .toolbar-text {
+    display: none;
+  }
+  
+  .measure-tooltip {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}

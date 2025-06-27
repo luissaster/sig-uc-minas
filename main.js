@@ -146,7 +146,7 @@ function updateMapInfo(map) {
 }
 
 // Função para setup da barra de ferramentas
-function setupToolbar(map) {
+function setupToolbar(map, getFeatureInfoControl) {
   const zoomToExtentBtn = document.getElementById('zoomToExtent');
   const fullscreenBtn = document.getElementById('fullscreenBtn');
   const infoBtn = document.getElementById('infoBtn');
@@ -198,6 +198,204 @@ function setupToolbar(map) {
         8000
       );
     });
+  }
+  
+  // Botão de medição
+  const measureBtn = document.getElementById('measureBtn');
+  if (measureBtn) {
+    let isMeasuring = false;
+    let measurePoints = [];
+    let measurePolyline = null;
+    let measureMarkers = [];
+    
+    measureBtn.addEventListener('click', () => {
+      if (!isMeasuring) {
+        // Ativar modo de medição
+        isMeasuring = true;
+        measureBtn.classList.add('active');
+        measureBtn.innerHTML = '<span class="toolbar-icon">✋</span><span class="toolbar-text">Cancelar</span>';
+        showNotification('Modo Medição Ativo', 'Clique no mapa para adicionar pontos. Pressione Backspace para desfazer. Clique em "Cancelar" para sair.', 'info');
+        
+        // Desativar GetFeatureInfo
+        if (getFeatureInfoControl) {
+          getFeatureInfoControl.setMeasuringState(true);
+        }
+        
+        // Adicionar eventos
+        map.on('click', handleMeasureClick);
+        document.addEventListener('keydown', handleMeasureKeydown);
+        
+        // Mudar cursor do mapa
+        map.getContainer().style.cursor = 'crosshair';
+        map.getContainer().classList.add('measuring');
+      } else {
+        // Desativar modo de medição
+        isMeasuring = false;
+        measureBtn.classList.remove('active');
+        measureBtn.innerHTML = '<span class="toolbar-icon">📏</span><span class="toolbar-text">Medir</span>';
+        
+        // Reativar GetFeatureInfo
+        if (getFeatureInfoControl) {
+          getFeatureInfoControl.setMeasuringState(false);
+        }
+        
+        // Limpar medições
+        clearMeasurements();
+        
+        // Remover eventos
+        map.off('click', handleMeasureClick);
+        document.removeEventListener('keydown', handleMeasureKeydown);
+        
+        // Restaurar cursor
+        map.getContainer().style.cursor = '';
+        map.getContainer().classList.remove('measuring');
+      }
+    });
+    
+    // Função para lidar com teclas durante medição
+    function handleMeasureKeydown(e) {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        undoLastPoint();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        // Desativar modo de medição
+        measureBtn.click();
+      }
+    }
+    
+    // Função para desfazer último ponto
+    function undoLastPoint() {
+      if (measurePoints.length === 0) return;
+      
+      // Remover último ponto
+      measurePoints.pop();
+      
+      // Remover último marcador
+      if (measureMarkers.length > 0) {
+        const lastMarker = measureMarkers.pop();
+        map.removeLayer(lastMarker);
+      }
+      
+      // Atualizar linha
+      if (measurePoints.length === 0) {
+        if (measurePolyline) {
+          map.removeLayer(measurePolyline);
+          measurePolyline = null;
+        }
+        showNotification('Medição cancelada', 'Todos os pontos foram removidos', 'info');
+      } else if (measurePoints.length === 1) {
+        if (measurePolyline) {
+          map.removeLayer(measurePolyline);
+          measurePolyline = null;
+        }
+        showNotification('Ponto removido', 'Clique em outro local para adicionar o segundo ponto', 'info');
+      } else {
+        if (measurePolyline) {
+          map.removeLayer(measurePolyline);
+        }
+        
+        measurePolyline = L.polyline(measurePoints, {
+          color: '#ff4444',
+          weight: 3,
+          opacity: 0.8
+        }).addTo(map);
+        
+        const totalDistance = calculateTotalDistance(measurePoints);
+        showMeasurementInfo(totalDistance);
+        showNotification('Ponto removido', 'Clique em outro local para adicionar mais pontos', 'info');
+      }
+    }
+    
+    // Função para lidar com cliques durante medição
+    function handleMeasureClick(e) {
+      const point = e.latlng;
+      measurePoints.push(point);
+      
+      // Adicionar marcador
+      const marker = L.marker(point, {
+        icon: L.divIcon({
+          className: 'measure-marker',
+          html: `${measurePoints.length}`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        })
+      }).addTo(map);
+      
+      measureMarkers.push(marker);
+      
+      // Atualizar linha
+      if (measurePoints.length > 1) {
+        if (measurePolyline) {
+          map.removeLayer(measurePolyline);
+        }
+        
+        measurePolyline = L.polyline(measurePoints, {
+          color: '#ff4444',
+          weight: 3,
+          opacity: 0.8
+        }).addTo(map);
+        
+        // Calcular e mostrar distância total
+        const totalDistance = calculateTotalDistance(measurePoints);
+        showMeasurementInfo(totalDistance);
+      }
+      
+      // Mostrar notificação para próximo ponto
+      if (measurePoints.length === 1) {
+        showNotification('Primeiro ponto adicionado', 'Clique em outro local para adicionar o segundo ponto. Pressione Backspace para desfazer.', 'info');
+      } else {
+        const totalDistance = calculateTotalDistance(measurePoints);
+        const distanceKm = (totalDistance / 1000).toFixed(2);
+        const distanceM = Math.round(totalDistance);
+        let distanceText = totalDistance >= 1000 ? `${distanceKm} km` : `${distanceM} m`;
+        
+        showNotification('Ponto adicionado', `Distância atual: ${distanceText}. Clique para adicionar mais pontos ou "Cancelar" para finalizar.`, 'success');
+      }
+    }
+    
+    // Função para calcular distância total
+    function calculateTotalDistance(points) {
+      let totalDistance = 0;
+      for (let i = 1; i < points.length; i++) {
+        totalDistance += points[i-1].distanceTo(points[i]);
+      }
+      return totalDistance;
+    }
+    
+    // Função para mostrar informações da medição
+    function showMeasurementInfo(distance) {
+      const distanceKm = (distance / 1000).toFixed(2);
+      const distanceM = Math.round(distance);
+      
+      let distanceText = '';
+      if (distance >= 1000) {
+        distanceText = `${distanceKm} km (${distanceM.toLocaleString()} m)`;
+      } else {
+        distanceText = `${distanceM} metros`;
+      }
+      
+      // Atualizar tooltip da linha
+      if (measurePolyline) {
+        measurePolyline.bindTooltip(`Distância: ${distanceText}`, {
+          permanent: true,
+          direction: 'center',
+          className: 'measure-tooltip'
+        });
+      }
+    }
+    
+    // Função para limpar medições
+    function clearMeasurements() {
+      if (measurePolyline) {
+        map.removeLayer(measurePolyline);
+        measurePolyline = null;
+      }
+      
+      measureMarkers.forEach(marker => map.removeLayer(marker));
+      measureMarkers = [];
+      measurePoints = [];
+    }
   }
 }
 
@@ -691,7 +889,14 @@ function setupLegend(map, layerData) {
 
 // 6. Funcionalidade GetFeatureInfo
 function setupGetFeatureInfo(map, layerData) {
+  let isMeasuring = false; // Variável para controlar se está medindo
+  
   map.on("click", async (e) => {
+    // Se estiver no modo de medição, não executar GetFeatureInfo
+    if (isMeasuring) {
+      return;
+    }
+    
     // Fechar popups existentes antes de abrir um novo
     map.closePopup();
     
@@ -755,8 +960,20 @@ function setupGetFeatureInfo(map, layerData) {
   
   // Fechar popup quando o mapa é movido
   map.on('movestart', () => {
-    map.closePopup();
+    if (!isMeasuring) {
+      map.closePopup();
+    }
   });
+  
+  // Retornar função para controlar o estado de medição
+  return {
+    setMeasuringState: (measuring) => {
+      isMeasuring = measuring;
+      if (measuring) {
+        map.closePopup(); // Fechar popups existentes ao entrar no modo medição
+      }
+    }
+  };
 }
 
 function formatPopupContent(features) {
@@ -791,10 +1008,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const layerData = createWMSLayers();
   const legend = setupLegend(map, layerData);
   setupLayerList(map, layerData, legend);
-  setupGetFeatureInfo(map, layerData);
+  const getFeatureInfoControl = setupGetFeatureInfo(map, layerData);
   setupMobileMenu();
   updateMapInfo(map);
-  setupToolbar(map);
+  setupToolbar(map, getFeatureInfoControl);
   setupSearch(map);
   setupFilters();
 });
