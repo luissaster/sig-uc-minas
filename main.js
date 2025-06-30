@@ -811,8 +811,9 @@ const createWMSLayers = () =>
   }));
 
 // =====================
-// Lista de Camadas e Legenda
+// Lista de Camadas, Controles de Opacidade e Legenda
 // =====================
+
 const setupLayerList = (map, layerData, legend) => {
   const layerListEl = document.getElementById("layerList");
 
@@ -834,6 +835,7 @@ const setupLayerList = (map, layerData, legend) => {
     const opacityControl = document.createElement("div");
     opacityControl.className = "opacity-control";
 
+    // Cria o slider de opacidade
     const slider = document.createElement("input");
     slider.type = "range";
     slider.className = "opacity-slider";
@@ -847,12 +849,19 @@ const setupLayerList = (map, layerData, legend) => {
     opacityValue.className = "opacity-value";
     opacityValue.textContent = "100%";
 
+    // Quando o usuário move o slider (input), esta função é chamada
     slider.addEventListener("input", function () {
-      // Atualiza a opacidade da camada conforme o slider
+      // Atualiza a opacidade da camada associada ao item, usando o valor atual do slider
+      // A função setOpacity é usada para definir a opacidade da camada WMS, sendo um valor entre 0 e 1, onde
+      // 0 é totalmente transparente e 1 é totalmente opaco.
+      // item.layer é a camada WMS associada ao item da lista de camadas. 
       item.layer.setOpacity(this.value);
+      // Atualiza o texto na interface para mostrar a opacidade em porcentagem
       opacityValue.textContent = `${Math.round(this.value * 100)}%`;
     });
 
+    // Adiciona a camada ao mapa quando o checkbox é marcado
+    // Também move a camada para o topo
     checkbox.addEventListener("change", function () {
       if (this.checked) {
         item.layer.addTo(map);
