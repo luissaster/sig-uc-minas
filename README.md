@@ -5,7 +5,7 @@ Projeto da disciplina SIN 420 - Bancos de Dados Geográficos, da Universidade Fe
 
 ### Descrição
 
-Aplicativo web interativo desenvolvido na UFV – Campus Rio Paranaíba para visualização e análise das Unidades de Conservação de Minas Gerais. Utiliza Leaflet, GeoServer e dados do OpenStreetMap para oferecer mapas dinâmicos com ferramentas de busca e consulta espacial.
+Aplicativo web desenvolvido para a visualização e análise das Unidades de Conservação de Minas Gerais. Utiliza Leaflet, GeoServer e dados do OpenStreetMap para oferecer mapas dinâmicos com ferramentas de busca e consulta espacial.
 
 <img width="1912" height="962" alt="print_interface_geral2" src="https://github.com/user-attachments/assets/d7067b6b-6e49-48d5-8dd6-2e90ab206852" />
 
