@@ -1,102 +1,7 @@
-// =====================
-// Constantes e Configs
-// =====================
-const INITIAL_VIEW = [-14.235, -51.925]; // Centro do Brasil
-const INITIAL_ZOOM = 5;
-const GEOSERVER_URL = "http://localhost:8080/geoserver/wms";
-const OSM_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+import { Utils } from './utils.js';
+import { fetchSuggestions } from './api.js';
 
-const WMS_DEFAULT_PARAMS = {
-  format: "image/png",
-  transparent: true,
-  version: "1.1.0",
-};
-
-const WMS_LAYERS = [
-  { name: "UC Estaduais", layerName: "projeto_sin420:uc_estaduais" },
-  { name: "UC Municipais", layerName: "projeto_sin420:uc_municipais" },
-  { name: "UC Federais", layerName: "projeto_sin420:uc_federais" },
-  { name: "Limite de MG", layerName: "projeto_sin420:limite_mg" },
-  {
-    name: "Área de Criação de UC",
-    layerName: "projeto_sin420:area_criacao_uc",
-  },
-  { name: "Biomas de MG", layerName: "projeto_sin420:biomas_mg" },
-  { name: "Barragens", layerName: "projeto_sin420:barragens" },
-];
-
-const baseLayers = {
-  OpenStreetMap: L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    { attribution: OSM_ATTRIBUTION }
-  ),
-  Satélite: L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    {
-      attribution:
-        'Tiles © <a href="https://www.esri.com/">Esri</a> &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-    }
-  ),
-};
-
-// =====================
-// Utilitários Gerais
-// =====================
-const Utils = {
-  showNotification: (title, message, type = "info", duration = 5000) => {
-    const notifications = document.getElementById("notifications");
-    const notification = document.createElement("div");
-    notification.className = `notification ${type}`;
-    const icons = { info: "ℹ️", success: "✅", error: "❌", warning: "⚠️" };
-    notification.innerHTML = `
-      <span class="notification-icon">${icons[type] || icons.info}</span>
-      <div class="notification-content">
-        <div class="notification-title">${title}</div>
-        <div class="notification-message">${message}</div>
-      </div>
-      <button class="notification-close">×</button>
-    `;
-    notifications.appendChild(notification);
-    setTimeout(() => {
-      if (notification.parentNode) notification.remove();
-    }, duration);
-    notification
-      .querySelector(".notification-close")
-      .addEventListener("click", () => notification.remove());
-  },
-  showLoading: () => {
-    const loadingSpinner = document.getElementById("loadingSpinner");
-    if (loadingSpinner) loadingSpinner.classList.add("show");
-  },
-  hideLoading: () => {
-    const loadingSpinner = document.getElementById("loadingSpinner");
-    if (loadingSpinner) loadingSpinner.classList.remove("show");
-  },
-  isValidCoordinates: (query) => {
-    const coordPattern = /^(-?\d+\.?\d*)[\,\s]+(-?\d+\.?\d*)$/;
-    const match = query.match(coordPattern);
-    if (match) {
-      const lat = parseFloat(match[1]);
-      const lng = parseFloat(match[2]);
-      return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
-    }
-    return false;
-  },
-  extractCoordinates: (query) => {
-    const coordPattern = /(-?\d+\.?\d*)[\,\s]+(-?\d+\.?\d*)/;
-    const match = query.match(coordPattern);
-    if (match) {
-      return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
-    }
-    return null;
-  },
-};
-
-// =====================
-// Menu Móvel
-// =====================
-const setupMobileMenu = () => {
+export const setupMobileMenu = () => {
   const mobileMenuToggle = document.getElementById("mobileMenuToggle");
   const sidebar = document.getElementById("sidebar");
   const sidebarOverlay = document.getElementById("sidebarOverlay");
@@ -118,10 +23,7 @@ const setupMobileMenu = () => {
   }
 };
 
-// =====================
-// Informações do Mapa
-// =====================
-const updateMapInfo = (map) => {
+export const updateMapInfo = (map) => {
   const coordinatesEl = document.getElementById("coordinates");
   const zoomLevelEl = document.getElementById("zoomLevel");
   const mapScaleEl = document.getElementById("mapScale");
@@ -154,10 +56,7 @@ const updateMapInfo = (map) => {
   updateActiveLayers();
 };
 
-// =====================
-// Toolbar e Medição
-// =====================
-const Toolbar = {
+export const Toolbar = {
   setup: (map, getFeatureInfoControl) => {
     const zoomToExtentBtn = document.getElementById("zoomToExtent");
     const fullscreenBtn = document.getElementById("fullscreenBtn");
@@ -183,12 +82,10 @@ const Toolbar = {
       fullscreenBtn.addEventListener("click", () => {
         if (!document.fullscreenElement) {
           document.documentElement.requestFullscreen();
-          fullscreenBtn.innerHTML =
-            '<span class="toolbar-icon">⛶</span><span class="toolbar-text">Sair</span>';
+          fullscreenBtn.querySelector('.toolbar-text').textContent = 'Sair';
         } else {
           document.exitFullscreen();
-          fullscreenBtn.innerHTML =
-            '<span class="toolbar-icon">⛶</span><span class="toolbar-text">Tela Cheia</span>';
+          fullscreenBtn.querySelector('.toolbar-text').textContent = 'Tela Cheia';
         }
       });
     }
@@ -231,8 +128,7 @@ const Toolbar = {
           // Ativar modo de medição
           isMeasuring = true;
           measureBtn.classList.add("active");
-          measureBtn.innerHTML =
-            '<span class="toolbar-icon">✋</span><span class="toolbar-text">Cancelar</span>';
+          measureBtn.querySelector('.toolbar-text').textContent = 'Cancelar';
           Utils.showNotification(
             "Modo Medição Ativo",
             'Clique no mapa para adicionar pontos. Pressione Backspace para desfazer. Clique em "Cancelar" para sair.',
@@ -255,8 +151,7 @@ const Toolbar = {
           // Desativar modo de medição
           isMeasuring = false;
           measureBtn.classList.remove("active");
-          measureBtn.innerHTML =
-            '<span class="toolbar-icon">📏</span><span class="toolbar-text">Medir</span>';
+          measureBtn.querySelector('.toolbar-text').textContent = 'Medir';
 
           // Reativar GetFeatureInfo
           if (getFeatureInfoControl) {
@@ -445,19 +340,25 @@ const Toolbar = {
   },
 };
 
-// =====================
-// Busca Geográfica
-// =====================
-const Search = {
+export const Search = {
   setup: (map) => {
     const searchInput = document.getElementById("layerSearch");
     const searchBtn = document.getElementById("searchBtn");
     const suggestionsContainer = document.getElementById("searchSuggestions");
+    const suggestionsAria = document.createElement("div");
+    suggestionsAria.className = "sr-only";
+    suggestionsAria.setAttribute("aria-live", "polite");
+    suggestionsContainer.parentNode.insertBefore(suggestionsAria, suggestionsContainer.nextSibling);
+
 
     let searchMarkers = [];
     let currentSuggestions = [];
     let selectedIndex = -1;
     let searchTimeout;
+
+    searchInput.setAttribute("aria-autocomplete", "list");
+    searchInput.setAttribute("aria-haspopup", "true");
+    searchInput.setAttribute("aria-expanded", "false");
 
     function clearSearchMarkers() {
       searchMarkers.forEach((marker) => map.removeLayer(marker));
@@ -474,13 +375,25 @@ const Search = {
         }),
       }).addTo(map);
 
-      marker.bindPopup(`
-        <div class="search-popup">
-          <h4>${name}</h4>
-          <p>Coordenadas: ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
-          <button onclick="zoomToLocation(${lat}, ${lng})" class="zoom-btn">Zoom</button>
-        </div>
-      `);
+      const popupContent = document.createElement('div');
+      popupContent.className = 'search-popup';
+
+      const title = document.createElement('h4');
+      title.textContent = name;
+
+      const coords = document.createElement('p');
+      coords.textContent = `Coordenadas: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+      const zoomButton = document.createElement('button');
+      zoomButton.className = 'zoom-btn';
+      zoomButton.textContent = 'Zoom';
+      zoomButton.onclick = () => zoomToLocation(lat, lng);
+
+      popupContent.appendChild(title);
+      popupContent.appendChild(coords);
+      popupContent.appendChild(zoomButton);
+
+      marker.bindPopup(popupContent);
 
       searchMarkers.push(marker);
       return marker;
@@ -495,44 +408,24 @@ const Search = {
       );
     };
 
-    async function fetchSuggestions(query) {
+    async function showSuggestions(query) {
       if (query.length < 2) {
         hideSuggestions();
         return;
       }
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            query
-          )}&limit=5&addressdetails=1`,
-          {
-            headers: {
-              Accept: "application/json",
-              "User-Agent": "SIG-UC-Minas/1.0",
-            },
-          }
-        );
-        if (!response.ok) {
-          throw new Error("Erro na busca");
-        }
-        const results = await response.json();
-        currentSuggestions = results;
-        showSuggestions(results);
-      } catch (error) {
-        hideSuggestions();
-      }
-    }
-
-    function showSuggestions(suggestions) {
-      if (suggestions.length === 0) {
+      const results = await fetchSuggestions(query);
+      currentSuggestions = results;
+      if (results.length === 0) {
         hideSuggestions();
         return;
       }
       suggestionsContainer.innerHTML = "";
-      suggestions.forEach((suggestion, index) => {
+      results.forEach((suggestion, index) => {
         const item = document.createElement("div");
         item.className = "suggestion-item";
         item.setAttribute("data-index", index);
+        item.setAttribute("role", "option");
+        item.id = `suggestion-${index}`;
         const icon = getSuggestionIcon(suggestion);
         const title = suggestion.display_name.split(",")[0];
         const subtitle = suggestion.display_name
@@ -542,14 +435,32 @@ const Search = {
         const coords = `${parseFloat(suggestion.lat).toFixed(4)}, ${parseFloat(
           suggestion.lon
         ).toFixed(4)}`;
-        item.innerHTML = `
-          <span class="suggestion-icon">${icon}</span>
-          <div class="suggestion-content">
-            <div class="suggestion-title">${title}</div>
-            <div class="suggestion-subtitle">${subtitle}</div>
-          </div>
-          <div class="suggestion-coordinates">${coords}</div>
-        `;
+        
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "suggestion-icon";
+        iconSpan.textContent = icon;
+
+        const contentDiv = document.createElement("div");
+        contentDiv.className = "suggestion-content";
+
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "suggestion-title";
+        titleDiv.textContent = title;
+
+        const subtitleDiv = document.createElement("div");
+        subtitleDiv.className = "suggestion-subtitle";
+        subtitleDiv.textContent = subtitle;
+
+        const coordsDiv = document.createElement("div");
+        coordsDiv.className = "suggestion-coordinates";
+        coordsDiv.textContent = coords;
+
+        contentDiv.appendChild(titleDiv);
+        contentDiv.appendChild(subtitleDiv);
+        item.appendChild(iconSpan);
+        item.appendChild(contentDiv);
+        item.appendChild(coordsDiv);
+
         item.addEventListener("click", () => {
           selectSuggestion(suggestion);
         });
@@ -560,17 +471,26 @@ const Search = {
         suggestionsContainer.appendChild(item);
       });
       suggestionsContainer.classList.add("show");
+      searchInput.setAttribute("aria-expanded", "true");
+      suggestionsAria.textContent = `${results.length} sugestões encontradas.`;
     }
 
     function hideSuggestions() {
       suggestionsContainer.classList.remove("show");
+      searchInput.setAttribute("aria-expanded", "false");
       selectedIndex = -1;
+      suggestionsAria.textContent = "";
     }
 
     function updateSelectedSuggestion() {
       const items = suggestionsContainer.querySelectorAll(".suggestion-item");
       items.forEach((item, index) => {
-        item.classList.toggle("selected", index === selectedIndex);
+        if (index === selectedIndex) {
+          item.classList.add("selected");
+          searchInput.setAttribute("aria-activedescendant", item.id);
+        } else {
+          item.classList.remove("selected");
+        }
       });
     }
 
@@ -643,21 +563,7 @@ const Search = {
             },
           ];
         } else {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-              query
-            )}&limit=5&addressdetails=1`,
-            {
-              headers: {
-                Accept: "application/json",
-                "User-Agent": "SIG-UC-Minas/1.0",
-              },
-            }
-          );
-          if (!response.ok) {
-            throw new Error("Erro na busca");
-          }
-          results = await response.json();
+          results = await fetchSuggestions(query);
         }
         if (results.length === 0) {
           Utils.showNotification(
@@ -701,12 +607,13 @@ const Search = {
           clearTimeout(searchTimeout);
         }
         searchTimeout = setTimeout(() => {
-          fetchSuggestions(query);
+          showSuggestions(query);
         }, 300);
       });
       // Navegação com teclado
       searchInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
+          e.preventDefault();
           if (selectedIndex >= 0 && currentSuggestions[selectedIndex]) {
             selectSuggestion(currentSuggestions[selectedIndex]);
           } else {
@@ -714,15 +621,16 @@ const Search = {
           }
         } else if (e.key === "ArrowDown") {
           e.preventDefault();
-          selectedIndex = Math.min(
-            selectedIndex + 1,
-            currentSuggestions.length - 1
-          );
-          updateSelectedSuggestion();
+          if (selectedIndex < currentSuggestions.length - 1) {
+            selectedIndex++;
+            updateSelectedSuggestion();
+          }
         } else if (e.key === "ArrowUp") {
           e.preventDefault();
-          selectedIndex = Math.max(selectedIndex - 1, -1);
-          updateSelectedSuggestion();
+          if (selectedIndex > 0) {
+            selectedIndex--;
+            updateSelectedSuggestion();
+          }
         } else if (e.key === "Escape") {
           hideSuggestions();
           searchInput.blur();
@@ -739,10 +647,7 @@ const Search = {
   },
 };
 
-// =====================
-// Filtros
-// =====================
-const setupFilters = () => {
+export const setupFilters = () => {
   const filterBtns = document.querySelectorAll(".filter-btn");
 
   filterBtns.forEach((btn) => {
@@ -791,30 +696,7 @@ const setupFilters = () => {
   });
 };
 
-// =====================
-// Inicialização do Mapa e Camadas
-// =====================
-const initializeMap = () => L.map("map").setView(INITIAL_VIEW, INITIAL_ZOOM);
-const addBaseLayer = (map) => {
-  baseLayers["OpenStreetMap"].addTo(map);
-  L.control
-    .layers(baseLayers, null, { position: "topright", collapsed: true })
-    .addTo(map);
-};
-const createWMSLayers = () =>
-  WMS_LAYERS.map((item) => ({
-    name: item.name,
-    layer: L.tileLayer.wms(GEOSERVER_URL, {
-      layers: item.layerName,
-      ...WMS_DEFAULT_PARAMS,
-    }),
-  }));
-
-// =====================
-// Lista de Camadas, Controles de Opacidade e Legenda
-// =====================
-
-const setupLayerList = (map, layerData, legend) => {
+export const setupLayerList = (map, layerData, legend) => {
   const layerListEl = document.getElementById("layerList");
 
   layerData.forEach((item) => {
@@ -900,170 +782,3 @@ const updateLayerOrder = (map, layerListEl, layerData, legend) => {
   });
   legend.update();
 };
-
-const setupLegend = (map, layerData) => {
-  const legend = L.control({ position: "bottomright" });
-
-  legend.onAdd = function () {
-    this._div = L.DomUtil.create("div", "info legend");
-    this.update();
-    return this._div;
-  };
-
-  legend.update = function () {
-    const activeLayers = layerData.filter((item) => map.hasLayer(item.layer));
-    let content = "<h4>Legenda</h4>";
-
-    const layerListEl = document.getElementById("layerList");
-    const visibleLayerNames = Array.from(
-      layerListEl.querySelectorAll("li")
-    ).map((li) => li.getAttribute("data-name"));
-
-    const sortedActiveLayers = activeLayers.sort((a, b) => {
-      return (
-        visibleLayerNames.indexOf(a.name) - visibleLayerNames.indexOf(b.name)
-      );
-    });
-
-    sortedActiveLayers.forEach((item) => {
-      const layerName = item.layer.wmsParams.layers;
-      const legendUrl = `${GEOSERVER_URL}?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=${layerName}`;
-      content += `<div class="legend-item"><img src="${legendUrl}" alt="Legenda para ${item.name}"> ${item.name}</div>`;
-    });
-
-    this._div.innerHTML = content;
-    this._div.style.display = activeLayers.length > 0 ? "block" : "none";
-  };
-
-  legend.addTo(map);
-  return legend;
-};
-
-// =====================
-// GetFeatureInfo
-// =====================
-const setupGetFeatureInfo = (map, layerData) => {
-  let isMeasuring = false;
-
-  map.on("click", async (e) => {
-    if (isMeasuring) {
-      return;
-    }
-
-    map.closePopup();
-
-    const popup = L.popup({
-      closeButton: true,
-      autoClose: false,
-      closeOnClick: false,
-      className: "custom-popup",
-    })
-      .setLatLng(e.latlng)
-      .setContent('<div class="loading">Buscando informações...</div>')
-      .openOn(map);
-
-    const activeLayers = layerData.filter((item) => map.hasLayer(item.layer));
-
-    if (activeLayers.length === 0) {
-      popup.setContent(
-        '<div class="error">Nenhuma camada selecionada para consulta.</div>'
-      );
-      return;
-    }
-
-    const layerNames = activeLayers.map((item) => item.layer.wmsParams.layers);
-
-    const params = {
-      service: "WMS",
-      version: "1.1.0",
-      request: "GetFeatureInfo",
-      layers: layerNames.join(","),
-      query_layers: layerNames.join(","),
-      info_format: "application/json",
-      feature_count: 10,
-      srs: "EPSG:4326",
-      bbox: map.getBounds().toBBoxString(),
-      height: map.getSize().y,
-      width: map.getSize().x,
-      x: Math.round(e.containerPoint.x),
-      y: Math.round(e.containerPoint.y),
-    };
-
-    const url = GEOSERVER_URL + L.Util.getParamString(params, GEOSERVER_URL);
-
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (!data.features || data.features.length === 0) {
-        popup.setContent("Nenhuma feição encontrada neste local.");
-        return;
-      }
-
-      const content = formatPopupContent(data.features);
-      popup.setContent(content);
-    } catch (error) {
-      console.error("Erro na requisição GetFeatureInfo:", error);
-      popup.setContent(
-        '<div class="error">Ocorreu um erro ao buscar as informações.</div>'
-      );
-    }
-  });
-
-  map.on("movestart", () => {
-    if (!isMeasuring) {
-      map.closePopup();
-    }
-  });
-
-  return {
-    setMeasuringState: (measuring) => {
-      isMeasuring = measuring;
-      if (measuring) {
-        map.closePopup();
-      }
-    },
-  };
-};
-
-const formatPopupContent = (features) => {
-  let html = '<div class="popup-content">';
-
-  features.forEach((feature) => {
-    const layerName = feature.id.split(".")[0];
-    html += `<h4>${layerName}</h4>`;
-    html += '<div class="feature-info">';
-    html += '<table class="feature-table">';
-
-    for (const key in feature.properties) {
-      if (feature.properties.hasOwnProperty(key)) {
-        html += `<tr>`;
-        html += `<td class="property-name">${key.toUpperCase()}</td>`;
-        html += `<td class="property-value">${feature.properties[key]}</td>`;
-        html += `</tr>`;
-      }
-    }
-    html += "</table>";
-    html += "</div>";
-  });
-
-  html += "</div>";
-  return html;
-};
-
-// =====================
-// Inicialização da Aplicação
-// =====================
-document.addEventListener("DOMContentLoaded", () => {
-  const map = initializeMap();
-  addBaseLayer(map);
-  const layerData = createWMSLayers();
-  const legend = setupLegend(map, layerData);
-  setupLayerList(map, layerData, legend);
-  const getFeatureInfoControl = setupGetFeatureInfo(map, layerData);
-  setupMobileMenu();
-  updateMapInfo(map);
-  Toolbar.setup(map, getFeatureInfoControl);
-  Search.setup(map);
-  setupFilters();
-});

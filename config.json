@@ -1,0 +1,15 @@
+{
+  "geoserverUrl": "http://localhost:8080/geoserver/wms",
+  "wmsLayers": [
+    { "name": "UC Estaduais", "layerName": "projeto_sin420:uc_estaduais" },
+    { "name": "UC Municipais", "layerName": "projeto_sin420:uc_municipais" },
+    { "name": "UC Federais", "layerName": "projeto_sin420:uc_federais" },
+    { "name": "Limite de MG", "layerName": "projeto_sin420:limite_mg" },
+    {
+      "name": "Área de Criação de UC",
+      "layerName": "projeto_sin420:area_criacao_uc"
+    },
+    { "name": "Biomas de MG", "layerName": "projeto_sin420:biomas_mg" },
+    { "name": "Barragens", "layerName": "projeto_sin420:barragens" }
+  ]
+}
