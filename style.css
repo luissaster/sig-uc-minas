@@ -332,7 +332,17 @@ body {
   flex-shrink: 0;
 }
 
-/* Estilos para o popup de informações */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
 .popup-content {
   max-width: 350px;
   max-height: 400px;
@@ -413,6 +423,9 @@ body {
   padding: 16px;
   min-width: 200px;
   max-width: 300px;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  z-index: 1500;
 }
 
 .legend h4 {
@@ -657,32 +670,6 @@ body {
   .sidebar-subtitle {
     padding: 0 20px 12px 20px;
     font-size: 0.85em;
-  }
-}
-
-/* Melhorias para o tema escuro */
-@media (prefers-color-scheme: dark) {
-  #sidebar {
-    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-    border-right-color: rgba(148, 163, 184, 0.3);
-  }
-  
-  #sidebar h2 {
-    color: #f1f5f9;
-    background: rgba(30, 41, 59, 0.8);
-  }
-  
-  .layer-item {
-    background: rgba(30, 41, 59, 0.9);
-    border-color: rgba(148, 163, 184, 0.2);
-  }
-  
-  .layer-item span {
-    color: #f1f5f9;
-  }
-  
-  .layer-item:hover {
-    border-color: rgba(59, 130, 246, 0.5);
   }
 }
 
@@ -1292,6 +1279,10 @@ body {
 .leaflet-left,
 .leaflet-right {
   z-index: 1000;
+}
+
+.leaflet-bottom {
+  margin-bottom: 10px;
 }
 
 /* Estilos para a ferramenta de medição */
